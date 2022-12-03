@@ -1,3 +1,5 @@
+package utils;
+
 import org.jetbrains.annotations.NotNull;
 
 public class Person {
@@ -7,6 +9,11 @@ public class Person {
         this.email = email;
     }
 
+    /**
+     * Get the email of the person
+     *
+     * @return the email of the person
+     */
     public String getEmail() {
         return email.getEmail();
     }

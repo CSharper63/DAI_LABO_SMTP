@@ -1,119 +1,84 @@
-import java.io.*;
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
+/*
+ * @author Maxime Chantemargue
+ * @author Charles Matrand
+ * This program aims to send a mail to a list of people selected randomly from a parsed JSON formatted file.
+ * In most classes or other java file you will see @NotNull annotation. This annotation is used to specify that
+ * the current attribute passed as a param must not be null. This annotation is used by the IntelliJ IDEA IDE and
+ * come from org.jetbrains.annotations package, making it not portable while the user who try to run this program does not install it.
+ * */
+
+import org.jetbrains.annotations.NotNull;
+import utils.*;
+
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Random;
 
 public class MailRobot {
-    static final String LF = "\n";
-    static final String CRLF = "\r\n";
+    final private static Random random = new Random();
 
     public static void main(String[] args) {
         try {
-            final Properties config = FileParser.parseConfig(new File("src/main/config/config.properties"));
+            final Properties config = FileParser.parseConfig("src/main/config/config.properties");
             final String HOST = config.getProperty("smtpServerAddress");
-            final int PORT = Integer.parseInt(config.getProperty("smtpServerPort"));
-            final int NUMBER_OF_GROUP = Integer.parseInt(config.getProperty("numberOfGroups"));
+            final int PORT = Integer.parseInt(config.getProperty("smtpServerPort")),
+                    NUMBER_OF_GROUP = Integer.parseInt(config.getProperty("numberOfGroups"));
 
-            Socket socket = new Socket(HOST, PORT);
-            BufferedReader fromServer = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-            PrintWriter toServer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
 
-            String firstAdress = "test.com";
-            toServer.printf("EHLO %s%s", firstAdress, CRLF);
-            while (fromServer.ready()) {
-                String ligne = fromServer.readLine();
-                System.out.println(ligne);
+            ArrayList<Person> persons = FileParser.parsePersons("src/main/config/victims.json");
+            ArrayList<Message> messages = FileParser.parseMessages("src/main/config/messages.json");
+
+            ArrayList<Group> groups = MailRobot.generateGroups(persons, NUMBER_OF_GROUP);
+
+            Smtp smtp = new Smtp(HOST, PORT);
+            smtp.sayHello();
+
+            for (Group g : groups) {
+                System.out.println(g);
+                smtp.sendEmail(g.getSender(), g.getRecipients(), MailRobot.getRandomMessage(messages));
             }
+            smtp.quit(); // all streams will be closed as smtp implements Closable
 
-
-            // EHLO DONE NOW SENDING ALL THE EMAILS
-            ArrayList<Group> groups = FileParser.parseGroup("src/main/config/victims.json");
-            Message[] messages = FileParser.parseMessage("src/main/config/messages.json");
-            String mail2Send = formatMail(groups, messages);
-
-            toServer.print(mail2Send);
-
-           /* String str;
-            while ((str = fromServer.readLine()) != null) {
-                System.out.println(str);
-            }
-
-            String stringSender = "bob@bob.com";
-            toServer.write(String.format("MAIL FROM:<%s>\r\n", stringSender));
-
-            while (fromServer.ready()) {
-                String ligne = fromServer.readLine();
-            }
-
-            String stringReceiver = "bob@bob.com";
-            toServer.write(String.format("RCPT TO:<%s>\r\n", stringReceiver));
-
-            while (fromServer.ready()) {
-                String ligne = fromServer.readLine();
-            }
-            toServer.write("DATA\r\n");
-
-            while (fromServer.ready()) {
-                String ligne = fromServer.readLine();
-
-            }
-
-            toServer.write("THE DATA TO WRITE");
-
-            while (fromServer.ready()) {
-                String ligne = fromServer.readLine();
-            }
-            System.out.println("Message envoyé");
-          */
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-
     }
 
-    private static String formatMail(ArrayList<Group> groups, Message[] messages) throws IOException {
+    /**
+     * Select a message from a list of messages
+     *
+     * @param messages the list of messages
+     * @return a message
+     */
+    private static Message getRandomMessage(@NotNull ArrayList<Message> messages) {
+        return messages.get((random.nextInt(messages.size())) % messages.size());
+    }
 
-        StringBuilder sb = new StringBuilder();
+    /**
+     * Generate a list of groups from a list of persons
+     *
+     * @param persons        the list of persons
+     * @param numberOfGroups the number of groups to generate
+     * @return a list of groups
+     * @throws IllegalArgumentException if the number of groups is greater than the number of persons
+     */
+    private static ArrayList<Group> generateGroups(@NotNull ArrayList<Person> persons, int numberOfGroups) throws IllegalArgumentException {
+        if (numberOfGroups <= 0)
+            throw new IllegalArgumentException("The number of groups must be greater than 0 !");
+        if (persons.size() / numberOfGroups < 3) throw new RuntimeException("Not enough persons !");
 
-        for (Group groupActuel : groups) { // Or size of groups
+        ArrayList<ArrayList<Person>> allGroups = new ArrayList<>(numberOfGroups); // represents the n groups
+        for (int i = 0; i < numberOfGroups; ++i) allGroups.add(new ArrayList<>()); // init the groups
 
-            Random random = new Random();
-            Message msgToSend = messages[random.nextInt(messages.length)]; // get a random message
-
-            sb.append(String.format("MAIL FROM:<%s>\r\n", groupActuel.getSender().getEmail()));
-            for (Person p : groupActuel.getRecipients()) { // add all the recipients
-                sb.append(String.format("RCPT TO:<%s>%s", p.getEmail(), CRLF));
-            }
-
-            sb.append(String.format("DATA%s", CRLF));
-            sb.append(String.format("From: %s%s", groupActuel.getSender().getEmail(), CRLF));
-
-            // -- to add all the recipients
-            sb.append("To: ");
-            for (Person p : groupActuel.getRecipients()) {
-                sb.append(p.getEmail()).append(", ");
-            }
-            sb.append(CRLF);
-            // -- end of to add all the recipients
-
-            sb.append("Content-Type: text/plain; charset=utf-8").append(CRLF); // Set encoding to UTF-8
-
-            sb.append(String.format("Subject: %s\r\n", msgToSend.getSubject()));
-            System.out.println(sb.toString());
-            sb.append(msgToSend.getBody());
-            sb.append(String.format("%s%s%s", CRLF, ".", CRLF));
-            System.out.println("Message envoyé");
+        for (int i = 0; i < persons.size(); ++i) {
+            Person p = persons.get((i + random.nextInt(persons.size())) % persons.size());
+            allGroups.get(i % numberOfGroups).add(p); // add the person to the random group
         }
-        return sb.toString();
+        //generate groups from persons list
+        ArrayList<Group> groups = new ArrayList<>(numberOfGroups);
+        for (ArrayList<Person> u : allGroups) {
+            groups.add(new Group(u.get(0), new ArrayList<>(u.subList(1, u.size()))));
+        }
+        return groups;
     }
-
-
-    private static void sendMail(String sender, String receiver, String message) {
-
-    }
-
-
 }
