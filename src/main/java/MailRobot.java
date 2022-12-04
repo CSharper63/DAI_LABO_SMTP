@@ -45,16 +45,13 @@ public class MailRobot {
 
             ArrayList<SmtpResponse> rep = smtpClient.sayHello();
             if (rep.get(rep.size() - 1).getCode() != 250)
-                throw new Exception("Unable to read extensions !");
+                throw new RuntimeException("Error while saying EHLO to the server");
 
             for (Group g : groups) {
                 rep = smtpClient.sendEmail(g.getSender(), g.getRecipients(), MailRobot.getRandomMessage(messages));
-                if (rep.get(rep.size() - 1).getCode() != 250)
-                    throw new Exception("Unable to read extensions !");
+
             }
             rep = smtpClient.quit();
-            if (rep.get(rep.size() - 1).getCode() != 221)
-                throw new Exception("Unable to quit !");
         } catch (Exception e) {
             throw new RuntimeException("Error while sending emails:", e);
         }
