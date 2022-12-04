@@ -22,5 +22,9 @@
   {
     "subject": "This is a spam message",
     "body": "I trolled you"
+  },
+  {
+    "subject": "Congratulations",
+    "body": "As you are so bad in C/C++ you are fired."
   }
 ]

@@ -15,32 +15,48 @@ import java.util.Properties;
 import java.util.Random;
 
 public class MailRobot {
-    final private static Random random = new Random();
+    final private static Random random = new Random(); //use for random selection of people and messages
 
     public static void main(String[] args) {
+        if (args.length != 3) {
+            System.err.println(
+                    "Usage: MailRobot <config.properties> <victims.json> <messages.json>");
+            System.exit(1);
+        }
+        //null by default, in case of error, the program will stop
+        Properties config = null;
+        ArrayList<Person> victims = null;
+        ArrayList<Message> messages = null;
         try {
-            final Properties config = FileParser.parseConfig("src/main/config/config.properties");
-            final String HOST = config.getProperty("smtpServerAddress");
-            final int PORT = Integer.parseInt(config.getProperty("smtpServerPort")),
-                    NUMBER_OF_GROUP = Integer.parseInt(config.getProperty("numberOfGroups"));
+            config = FileParser.parseConfig(args[0]);
+            victims = FileParser.parsePersons(args[1]);
+            messages = FileParser.parseMessages(args[2]);
+        } catch (Exception e) {
+            System.err.println("Error while parsing files");
+            System.exit(1);
+        }
 
+        final String HOST = config.getProperty("smtpServerAddress");
+        final int PORT = Integer.parseInt(config.getProperty("smtpServerPort")),
+                NUMBER_OF_GROUP = Integer.parseInt(config.getProperty("numberOfGroups"));
 
-            ArrayList<Person> persons = FileParser.parsePersons("src/main/config/victims.json");
-            ArrayList<Message> messages = FileParser.parseMessages("src/main/config/messages.json");
+        try (SmtpClient smtpClient = new SmtpClient(HOST, PORT)) {
+            ArrayList<Group> groups = MailRobot.generateGroups(victims, NUMBER_OF_GROUP);
 
-            ArrayList<Group> groups = MailRobot.generateGroups(persons, NUMBER_OF_GROUP);
-
-            Smtp smtp = new Smtp(HOST, PORT);
-            smtp.sayHello();
+            ArrayList<SmtpResponse> rep = smtpClient.sayHello();
+            if (rep.get(rep.size() - 1).getCode() != 250)
+                throw new Exception("Unable to read extensions !");
 
             for (Group g : groups) {
-                System.out.println(g);
-                smtp.sendEmail(g.getSender(), g.getRecipients(), MailRobot.getRandomMessage(messages));
+                rep = smtpClient.sendEmail(g.getSender(), g.getRecipients(), MailRobot.getRandomMessage(messages));
+                if (rep.get(rep.size() - 1).getCode() != 250)
+                    throw new Exception("Unable to read extensions !");
             }
-            smtp.quit(); // all streams will be closed as smtp implements Closable
-
+            rep = smtpClient.quit();
+            if (rep.get(rep.size() - 1).getCode() != 221)
+                throw new Exception("Unable to quit !");
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error while sending emails:", e);
         }
     }
 

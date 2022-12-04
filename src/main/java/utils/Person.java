@@ -5,7 +5,12 @@ import org.jetbrains.annotations.NotNull;
 public class Person {
     private final Email email; //final as it is immutable in this case
 
-    Person(@NotNull Email email) {
+    /**
+     * Create a new Person
+     *
+     * @param email the email of the person
+     */
+    public Person(@NotNull Email email) {
         this.email = email;
     }
 
