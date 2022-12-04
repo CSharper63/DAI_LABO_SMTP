@@ -50,7 +50,7 @@ public class FileParser {
     /**
      * Parse a properties file and return its content
      *
-     * @param f the properties file TODO: CHECK IF STRING IS BETTER THAN FILE
+     * @param f the properties file
      * @return a list of groups
      * @throws IOException if the file is not found
      */

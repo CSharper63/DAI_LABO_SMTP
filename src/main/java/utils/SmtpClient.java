@@ -58,7 +58,7 @@ public class SmtpClient implements Closeable {
      * @param sender     the sender of the message
      * @param recipients the list of recipients
      * @param message    the message to send
-     * @throws IOException if the message cannot be sent TODO VERIFY
+     * @throws IOException if the message cannot be sent
      */
     public ArrayList<SmtpResponse> sendEmail(@NotNull Person sender, @NotNull ArrayList<Person> recipients, @NotNull Message message) throws IOException {
         StringBuilder sb = new StringBuilder();
