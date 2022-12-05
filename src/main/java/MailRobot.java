@@ -49,7 +49,7 @@ public class MailRobot {
                 System.out.println(smtpClient.sendEmail(g.getSender(), g.getRecipients(), MailRobot.getRandomMessage(messages)));
             }
             rep = smtpClient.quit();
-            
+            System.out.println(rep);
             if (rep.get(rep.size() - 1).getCode() != 221) {
                 throw new RuntimeException("Error while quitting to the SMTP server");
             }
