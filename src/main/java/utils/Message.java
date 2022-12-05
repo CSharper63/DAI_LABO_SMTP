@@ -1,3 +1,8 @@
+/**
+ * @author Maxime Chantemargue
+ * @author Charles Matrand
+ */
+
 package utils;
 
 import org.jetbrains.annotations.NotNull;
@@ -37,6 +42,11 @@ public class Message {
         return body;
     }
 
+    /**
+     * Get the encoded subject of the message
+     *
+     * @return the encoded subject of the message
+     */
     public String getBase64Subject() {
         return new String(Base64.getEncoder().encode(subject.getBytes(StandardCharsets.UTF_8)));
     }

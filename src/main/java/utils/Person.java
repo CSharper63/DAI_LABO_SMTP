@@ -1,9 +1,14 @@
+/**
+ * @author Maxime Chantemargue
+ * @author Charles Matrand
+ */
+
 package utils;
 
 import org.jetbrains.annotations.NotNull;
 
 public class Person {
-    private final Email email; //final as it is immutable in this case
+    private final Email email; // final as it is immutable in this case
 
     /**
      * Create a new Person

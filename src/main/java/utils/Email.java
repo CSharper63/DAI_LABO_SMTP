@@ -1,3 +1,8 @@
+/**
+ * @author Maxime Chantemargue
+ * @author Charles Matrand
+ */
+
 package utils;
 
 public class Email {
