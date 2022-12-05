@@ -48,8 +48,11 @@ public class SmtpClient implements Closeable {
         this.socket = new Socket(this.host, this.port);
         this.fromServer = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
         this.toServer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
-        if (handleServerResponses().get(0).getCode() != 220) throw new IOException("Connection to the server failed");
+        var lastResponse = handleServerResponses();
+        if (lastResponse.get(lastResponse.size() - 1).getCode() != 220)
+            throw new IOException("Connection to the server failed");
     }
+
 
     /**
      * Send a EHLO command to the server

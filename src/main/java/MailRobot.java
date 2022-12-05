@@ -35,11 +35,9 @@ public class MailRobot {
             System.err.println("Error while parsing files");
             System.exit(1);
         }
-
         final String HOST = config.getProperty("smtpServerAddress");
         final int PORT = Integer.parseInt(config.getProperty("smtpServerPort")),
                 NUMBER_OF_GROUP = Integer.parseInt(config.getProperty("numberOfGroups"));
-
         try (SmtpClient smtpClient = new SmtpClient(HOST, PORT)) {
             ArrayList<SmtpResponse> rep = smtpClient.sayHello();
             System.out.println(rep);
@@ -51,7 +49,7 @@ public class MailRobot {
                 System.out.println(smtpClient.sendEmail(g.getSender(), g.getRecipients(), MailRobot.getRandomMessage(messages)));
             }
             rep = smtpClient.quit();
-            System.out.println(rep);
+            
             if (rep.get(rep.size() - 1).getCode() != 221) {
                 throw new RuntimeException("Error while quitting to the SMTP server");
             }
@@ -66,7 +64,8 @@ public class MailRobot {
      * @param messages the list of messages
      * @return a message
      */
-    private static Message getRandomMessage(@NotNull ArrayList<Message> messages) {
+    static Message getRandomMessage(@NotNull ArrayList<Message> messages) {
+        // info: this function has been set to package access to allow it to be used in test unit. It should be private.
         return messages.get((random.nextInt(messages.size())) % messages.size());
     }
 
@@ -78,7 +77,9 @@ public class MailRobot {
      * @return a list of groups
      * @throws IllegalArgumentException if the number of groups is greater than the number of persons
      */
-    private static @NotNull ArrayList<Group> generateGroups(@NotNull ArrayList<Person> persons, int numberOfGroups) throws IllegalArgumentException {
+    static @NotNull ArrayList<Group> generateGroups(@NotNull ArrayList<Person> persons, int numberOfGroups) throws IllegalArgumentException {
+        // info: this function has been set to package access to allow it to be used in test unit. It should be private.
+
         if (numberOfGroups <= 0) {
             throw new IllegalArgumentException("The number of groups must be greater than 0 !");
         }
